@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="2ea4952f-bcac-48d8-a099-0d1b41827a44" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/data_clean.py" beforeDir="false" afterPath="$PROJECT_DIR$/data/data_clean.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/network/initial_construct_network.py" beforeDir="false" afterPath="$PROJECT_DIR$/network/initial_construct_network.py" afterDir="false" />
-    </list>
+    <list default="true" id="2ea4952f-bcac-48d8-a099-0d1b41827a44" name="Default Changelist" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -20,8 +16,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/network/initial_construct_network.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="191">
-              <caret line="257" column="62" selection-start-line="257" selection-start-column="62" selection-end-line="257" selection-end-column="62" />
+            <state relative-caret-position="164">
+              <caret line="256" column="13" selection-start-line="256" selection-start-column="13" selection-end-line="256" selection-end-column="13" />
               <folding>
                 <element signature="e#0#27#0" expanded="true" />
               </folding>
@@ -300,13 +296,13 @@
       <window_info id="Favorites" order="2" sideWeight="0.5084388" side_tool="true" weight="0.1883378" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.49932975" visible="true" weight="0.3045326" />
+      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.49932975" weight="0.3045326" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.39943343" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.32956153" />
       <window_info anchor="bottom" id="Version Control" order="7" />
-      <window_info anchor="bottom" id="Terminal" order="8" sideWeight="0.49867898" weight="0.33002833" />
+      <window_info active="true" anchor="bottom" id="Terminal" order="8" sideWeight="0.49867898" visible="true" weight="0.33002833" />
       <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.501321" side_tool="true" weight="0.33002833" />
       <window_info anchor="bottom" id="Python Console" order="10" weight="0.32956153" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
@@ -381,8 +377,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/network/initial_construct_network.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="191">
-          <caret line="257" column="62" selection-start-line="257" selection-start-column="62" selection-end-line="257" selection-end-column="62" />
+        <state relative-caret-position="164">
+          <caret line="256" column="13" selection-start-line="256" selection-start-column="13" selection-end-line="256" selection-end-column="13" />
           <folding>
             <element signature="e#0#27#0" expanded="true" />
           </folding>
