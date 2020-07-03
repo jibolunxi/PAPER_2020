@@ -2,13 +2,14 @@ from util import mysql_pdbc
 import csv
 import numpy as np
 from util.ProcessBar import ProcessBar
+from data import data_clean
 
 
 FORK_WEIGHT = 100
 SAME_OWNER_WEIGHT = 50
 SAME_STAR_WEIGHT = 0.5
 SAME_CODER_WEIGHT = 10
-SAME_LANGUAGE_WEIGHT = 5
+# SAME_LANGUAGE_WEIGHT = 1
 
 
 # 将节点与边输出到csv
@@ -90,8 +91,8 @@ def fork_or_owner_relation(db_object, repo1_id, repo2_id):
     if repo2['forked_from'] is not None and repo2['forked_from'] == repo1_id:
         weight += FORK_WEIGHT
 
-    if repo1['language'] is not None and repo2['language'] is not None and repo1['language'] == repo2['language']:
-        weight += SAME_LANGUAGE_WEIGHT
+    # if repo1['language'] is not None and repo2['language'] is not None and repo1['language'] == repo2['language']:
+    #     weight += SAME_LANGUAGE_WEIGHT
 
     if repo1['owner_id'] == repo2['owner_id']:
         weight += SAME_OWNER_WEIGHT
@@ -213,10 +214,11 @@ if __name__ == '__main__':
 
     for year in range(2009, 2010):
         # 获取star排名前1000，且star数大于5、issue大于10的项目id
-        all_repos = get_star_1000_repo_by_year(year)
+        all_repos = data_clean.get_filtered_repos(dbObject, year)
         repos = all_repos[0:1000] if len(all_repos) > 1000 else all_repos
+
+        # 进度条
         size = len(repos)
-        print(len(all_repos), len(repos))
         pb = ProcessBar(size)
 
         # 构建size * size的矩阵
@@ -224,14 +226,14 @@ if __name__ == '__main__':
         repos_star_user_list = []
         repos_member_list = []
         for repo in repos:
-            repos_star_user_list.append(get_star_user_by_id(dbObject, year, repo))
-            repos_member_list.append(get_members_by_id(dbObject, year, repo))
+            repos_star_user_list.append(get_star_user_by_id(dbObject, year, repo['id']))
+            repos_member_list.append(get_members_by_id(dbObject, year, repo['id']))
 
         # 权值确定
         for repo_i in range(0, size):
             for repo_j in range(repo_i + 1, size):
                 count_weight = 0
-                count_weight += fork_or_owner_relation(dbObject, repos[repo_i], repos[repo_j])
+                count_weight += fork_or_owner_relation(dbObject, repos[repo_i]['id'], repos[repo_j]['id'])
                 count_weight += len(set(repos_member_list[repo_i]) & set(repos_member_list[repo_j])) * SAME_CODER_WEIGHT
                 count_weight += len(set(repos_star_user_list[repo_i]) & set(repos_star_user_list[repo_j])) * SAME_STAR_WEIGHT
 
@@ -286,18 +288,3 @@ if __name__ == '__main__':
         filename = "node_link_year.csv"
         new_filename = filename.replace("year", str(year))
         print_to_csv(new_filename, node_link_res, ['Source', 'Target', 'Weight', 'Type'])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
