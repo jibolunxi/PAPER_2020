@@ -3,6 +3,7 @@ import csv
 import numpy as np
 from util.ProcessBar import ProcessBar
 from data import data_clean
+from util import util
 
 
 FORK_WEIGHT = 100
@@ -10,14 +11,6 @@ SAME_OWNER_WEIGHT = 50
 SAME_STAR_WEIGHT = 0.5
 SAME_CODER_WEIGHT = 10
 # SAME_LANGUAGE_WEIGHT = 1
-
-
-# 将节点与边输出到csv
-def print_to_csv(filename, data, headers):
-    with open(filename, 'w', newline='')as f:
-        f_csv = csv.DictWriter(f, headers)
-        f_csv.writeheader()
-        f_csv.writerows(data)
 
 
 # csv获取项目id和star数
@@ -212,7 +205,7 @@ def count_same_issue(db_object, repo1_id, repo2_id, year):
 if __name__ == '__main__':
     dbObject = mysql_pdbc.SingletonModel()
 
-    for year in range(2009, 2010):
+    for year in range(2009, 2019):
         # 获取star排名前1000，且star数大于5、issue大于10的项目id
         all_repos = data_clean.get_filtered_repos(dbObject, year)
         repos = all_repos[0:1000] if len(all_repos) > 1000 else all_repos
@@ -223,10 +216,10 @@ if __name__ == '__main__':
 
         # 构建size * size的矩阵
         repos_network_matrix = np.zeros([size, size])
-        repos_star_user_list = []
+        # repos_star_user_list = []
         repos_member_list = []
         for repo in repos:
-            repos_star_user_list.append(get_star_user_by_id(dbObject, year, repo['id']))
+            # repos_star_user_list.append(get_star_user_by_id(dbObject, year, repo['id']))
             repos_member_list.append(get_members_by_id(dbObject, year, repo['id']))
 
         # 权值确定
@@ -235,7 +228,7 @@ if __name__ == '__main__':
                 count_weight = 0
                 count_weight += fork_or_owner_relation(dbObject, repos[repo_i]['id'], repos[repo_j]['id'])
                 count_weight += len(set(repos_member_list[repo_i]) & set(repos_member_list[repo_j])) * SAME_CODER_WEIGHT
-                count_weight += len(set(repos_star_user_list[repo_i]) & set(repos_star_user_list[repo_j])) * SAME_STAR_WEIGHT
+                # count_weight += len(set(repos_star_user_list[repo_i]) & set(repos_star_user_list[repo_j])) * SAME_STAR_WEIGHT
 
                 # count_weight += count_same_pr(dbObject, repos[repo_i], repos[repo_j], year)
                 # count_weight += count_same_issue(dbObject, repos[repo_i], repos[repo_j], year)
@@ -255,9 +248,9 @@ if __name__ == '__main__':
                 weight_list = list(np.zeros(size))
                 for repo_i in range(0, size):
                     count_weight = 0
-                    count_weight += fork_or_owner_relation(dbObject, repos[repo_i], repo)
-                    count_weight += len(set(repos_member_list[repo_i]) & set(get_members_by_id(dbObject, year, repo))) * SAME_CODER_WEIGHT
-                    count_weight += len(set(repos_star_user_list[repo_i]) & set(get_star_user_by_id(dbObject, year, repo))) * SAME_STAR_WEIGHT
+                    count_weight += fork_or_owner_relation(dbObject, repos[repo_i]['id'], repo['id'])
+                    count_weight += len(set(repos_member_list[repo_i]) & set(get_members_by_id(dbObject, year, repo['id']))) * SAME_CODER_WEIGHT
+                    # count_weight += len(set(repos_star_user_list[repo_i]) & set(get_star_user_by_id(dbObject, year, repo['id']))) * SAME_STAR_WEIGHT
 
                     weight_list[repo_i] = count_weight
 
@@ -266,25 +259,37 @@ if __name__ == '__main__':
 
                 if join_it:
                     repos.append(repo)
-                    repos_member_list.append(get_members_by_id(dbObject, year, repo))
-                    repos_star_user_list.append(get_star_user_by_id(dbObject, year, repo))
+                    repos_member_list.append(get_members_by_id(dbObject, year, repo['id']))
+                    # repos_star_user_list.append(get_star_user_by_id(dbObject, year, repo['id']))
                     row = np.array([weight_list])
                     repos_network_matrix = np.row_stack((repos_network_matrix, row))
                     weight_list.append(0)
                     col = np.array([weight_list])
                     repos_network_matrix = np.column_stack((repos_network_matrix, col.T))
 
-        node_link_res = []
+        link_res = []
+        node_res = []
+        nodes = []
         res_size = len(repos)
         for res_i in range(res_size):
             for res_j in range(res_i + 1, res_size):
-                node1_id = repos[res_i]
+                node1_id = repos[res_i]['id']
                 node1_name = get_name_by_id(dbObject, node1_id)
-                node2_id = repos[res_j]
+                node2_id = repos[res_j]['id']
                 node2_name = get_name_by_id(dbObject, node2_id)
                 weight = repos_network_matrix[res_i][res_j]
                 if weight > 100:
-                    node_link_res.append({'Source': node1_name, 'Target': node2_name, 'Weight': weight, 'Type': 'undirected'})
-        filename = "node_link_year.csv"
-        new_filename = filename.replace("year", str(year))
-        print_to_csv(new_filename, node_link_res, ['Source', 'Target', 'Weight', 'Type'])
+                    nodes.append(node1_name)
+                    nodes.append(node2_name)
+                    link_res.append({'Source': node1_name, 'Target': node2_name, 'Weight': weight, 'Type': 'undirected'})
+
+        link_filename = "links_year.csv"
+        link_filename = link_filename.replace("year", str(year))
+        util.print_to_csv(link_filename, link_res, ['Source', 'Target', 'Weight', 'Type'])
+
+        node_filename = "nodes_year.csv"
+        node_filename = node_filename.replace("year", str(year))
+        nodes = list(set(nodes))
+        for node in nodes:
+            nodes.append({'id': node, 'label': node})
+        util.print_to_csv(node_filename, node_res, ['id', 'label'])
