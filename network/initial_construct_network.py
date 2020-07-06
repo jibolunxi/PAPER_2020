@@ -1,5 +1,4 @@
 from util import mysql_pdbc
-import csv
 import numpy as np
 from util.ProcessBar import ProcessBar
 from data import data_clean
@@ -11,57 +10,6 @@ SAME_OWNER_WEIGHT = 30
 SAME_STAR_WEIGHT = 0.5
 SAME_CODER_WEIGHT = 10
 WEIGHT_THRESHOLD = 80
-# SAME_LANGUAGE_WEIGHT = 1
-
-
-# csv获取项目id和star数
-def get_repo_star(year):
-    filename = "repo_star_count_year.csv"
-    new_filename = filename.replace("year", str(year))
-    res = {}
-    with open(new_filename, 'r', encoding="utf-8") as f:
-        reader = csv.reader(f)
-        header = next(reader)  # 获取数据的第一列，作为后续要转为字典的键名 生成器，next方法获取
-        csv_reader = csv.DictReader(f, fieldnames=header)
-        for row in csv_reader:
-            d = {}
-            for k, v in row.items():
-                d[k] = int(v)          # 类型改为int
-            res[d['id']] = d['count']
-    return res
-
-
-# csv获取项目id和issue数
-def get_repo_issue(year):
-    filename = "repo_issue_count_year.csv"
-    new_filename = filename.replace("year", str(year))
-    res = {}
-    with open(new_filename, 'r', encoding="utf-8") as f:
-        reader = csv.reader(f)
-        header = next(reader)  # 获取数据的第一列，作为后续要转为字典的键名 生成器，next方法获取
-        csv_reader = csv.DictReader(f, fieldnames=header)
-        for row in csv_reader:
-            d = {}
-            for k, v in row.items():
-                d[k] = int(v)          # 类型改为int
-            res[d['id']] = d['count']
-    return res
-
-
-# 获取star数排名前1000，且star数大于5、issue大于10的项目集合
-def get_star_1000_repo_by_year(year):
-    all_repo_list = get_repo_star(year)
-    all_issue_list = get_repo_issue(year)
-    all_repo_list_order = sorted(all_repo_list.items(), key=lambda x: x[1], reverse=True)
-    print(len(all_repo_list))
-    repos_id = []
-    for repo in all_repo_list_order:
-        try:
-            if repo[1] > 5 and all_issue_list[repo[0]] > 5:
-                repos_id.append(repo[0])
-        except :
-            continue
-    return repos_id
 
 
 # 通过id获取代码库名称
@@ -72,7 +20,7 @@ def get_name_by_id(db_object, repo_id):
     return repo_name
 
 
-# 检测repo1和repo2是否为fork关系、所有者是否相同、语言是否相同，返回总权值
+# 检测repo1和repo2是否为fork关系、所有者是否相同，返回总权值
 def fork_or_owner_relation(db_object, repo1_id, repo2_id):
     weight = 0
     sql = "select * from projects where id = " + str(repo1_id)
@@ -84,9 +32,6 @@ def fork_or_owner_relation(db_object, repo1_id, repo2_id):
         weight += FORK_WEIGHT
     if repo2['forked_from'] is not None and repo2['forked_from'] == repo1_id:
         weight += FORK_WEIGHT
-
-    # if repo1['language'] is not None and repo2['language'] is not None and repo1['language'] == repo2['language']:
-    #     weight += SAME_LANGUAGE_WEIGHT
 
     if repo1['owner_id'] == repo2['owner_id']:
         weight += SAME_OWNER_WEIGHT
@@ -107,7 +52,7 @@ def get_star_user_by_id(db_object, year, id):
     return users
 
 
-# sql获取每年项目id和对应的Star人员
+# sql获取每年项目id和对应的开发人员
 def get_members_by_id(db_object, year, id):
     sql = "select user_id from project_members " \
           "where unix_timestamp(created_at) < unix_timestamp('next_year-01-01 00:00:00') and repo_id = " + str(id)
@@ -118,89 +63,6 @@ def get_members_by_id(db_object, year, id):
     for user in members_users:
         members.append(user['user_id'])
     return members
-
-
-# 统计repo1和repo2 Star和watch中相同的人数
-def count_same_star_watch(db_object, repo1_id, repo2_id, year):
-    repo1_star_list = []
-    repo2_star_list = []
-
-    sql = "select user_id from watchers where repo_id = " + str(repo1_id) + \
-          " and unix_timestamp(created_at) < unix_timestamp('next_year-01-01 00:00:00')"
-    new_sql = sql.replace("next_year", str(year + 1))
-    repo1_star_dict_list = db_object.execute(new_sql)
-    for user in repo1_star_dict_list:
-        repo1_star_list.append(user['user_id'])
-
-    sql = "select user_id from watchers where repo_id = " + str(repo2_id) + \
-          " and unix_timestamp(created_at) < unix_timestamp('next_year-01-01 00:00:00')"
-    new_sql = sql.replace("next_year", str(year + 1))
-    repo2_star_dict_list = db_object.execute(new_sql)
-    for user in repo2_star_dict_list:
-        repo2_star_list.append(user['user_id'])
-
-    weight = len(set(repo1_star_list) & set(repo2_star_list))
-    return weight
-
-
-# 统计repo1和repo2 PR中相同的人数
-def count_same_pr(db_object, repo1_id, repo2_id, year):
-    r1_pr_actor = []
-    r2_pr_actor = []
-
-    sql = "select id from pull_requests where head_repo_id = " + str(repo1_id) + " or base_repo_id = " + str(repo1_id)
-    repo1_pr_dict_list = db_object.execute(sql)
-    for pr in repo1_pr_dict_list:
-        sql = "select actor_id from pull_request_history " \
-              "where unix_timestamp(created_at) < unix_timestamp('next_year-01-01 00:00:00') " \
-              "and pull_request_id = " + str(pr['id'])
-        new_sql = sql.replace("next_year", str(year + 1))
-        users = db_object.execute(new_sql)
-        for user in users:
-            r1_pr_actor.append(user['actor_id'])
-
-    sql = "select id from pull_requests where head_repo_id = " + str(repo2_id) + " or base_repo_id = " + str(repo2_id)
-    repo2_pr_dict_list = db_object.execute(sql)
-    for pr in repo2_pr_dict_list:
-        sql = "select actor_id from pull_request_history " \
-              "where unix_timestamp(created_at) < unix_timestamp('next_year-01-01 00:00:00') " \
-              "and pull_request_id = " + str(pr['id'])
-        new_sql = sql.replace("next_year", str(year + 1))
-        users = db_object.execute(new_sql)
-        for user in users:
-            r2_pr_actor.append(user['actor_id'])
-
-    weight = len(set(r1_pr_actor) & set(r2_pr_actor))
-    return weight
-
-
-# 统计repo1和repo2 issue中相同的人数
-def count_same_issue(db_object, repo1_id, repo2_id, year):
-    r1_issue_actor = []
-    r2_issue_actor = []
-
-    sql = "select id from issues where repo_id = " + str(repo1_id) + \
-          " and unix_timestamp(created_at) < unix_timestamp('next_year-01-01 00:00:00')"
-    new_sql = sql.replace("next_year", str(year + 1))
-    repo1_issue_dict_list = db_object.execute(new_sql)
-    for issue in repo1_issue_dict_list:
-        sql = "select actor_id from issue_events where issue_id = " + str(issue['id'])
-        users = db_object.execute(sql)
-        for user in users:
-            r1_issue_actor.append(user['actor_id'])
-
-    sql = "select id from issues where repo_id = " + str(repo2_id) + \
-          " and unix_timestamp(created_at) < unix_timestamp('next_year-01-01 00:00:00')"
-    new_sql = sql.replace("next_year", str(year + 1))
-    repo2_issue_dict_list = db_object.execute(new_sql)
-    for issue in repo2_issue_dict_list:
-        sql = "select actor_id from issue_events where issue_id = " + str(issue['id'])
-        users = db_object.execute(sql)
-        for user in users:
-            r2_issue_actor.append(user['actor_id'])
-
-    weight = len(set(r1_issue_actor) & set(r2_issue_actor))
-    return weight
 
 
 # 初始网络权值确定
@@ -216,13 +78,6 @@ def calculate_weight(dbObject, repos, repos_member_list, link_filename, node_fil
             count_weight = 0
             count_weight += fork_or_owner_relation(dbObject, repos[repo_i]['id'], repos[repo_j]['id'])
             count_weight += len(set(repos_member_list[repo_i]) & set(repos_member_list[repo_j])) * SAME_CODER_WEIGHT
-            # count_weight += len(set(repos_star_user_list[repo_i]) & set(repos_star_user_list[repo_j])) * SAME_STAR_WEIGHT
-
-            # count_weight += count_same_pr(dbObject, repos[repo_i], repos[repo_j], year)
-            # count_weight += count_same_issue(dbObject, repos[repo_i], repos[repo_j], year)
-
-            # repos_network_matrix[repo_i][repo_j] += count_weight
-            # repos_network_matrix[repo_j][repo_i] += count_weight
 
             link_data = [repos[repo_i]['id'], repos[repo_j]['id'], count_weight, 'undirected']
             util.print_list_row_to_csv(link_filename, link_data, 'a')
@@ -261,11 +116,6 @@ def network_expansion(dbObject, year, all_repos, repos, repos_star_user_list, re
                 for value_i in range(0, size):
                     link_data = [repos[value_i]['id'], repo['id'], weight_list[value_i], 'undirected']
                     util.print_list_row_to_csv(link_filename, link_data, 'a')
-                # row = np.array([weight_list])
-                # repos_network_matrix = np.row_stack((repos_network_matrix, row))
-                # weight_list.append(0)
-                # col = np.array([weight_list])
-                # repos_network_matrix = np.column_stack((repos_network_matrix, col.T))
 
 
 if __name__ == '__main__':
@@ -287,16 +137,10 @@ if __name__ == '__main__':
         repos = all_repos[0:1000] if len(all_repos) > 1000 else all_repos
         size = len(repos)
 
-        # # 构建size * size的矩阵
-        # repos_network_matrix = np.zeros([size, size])
-
         # 项目关注人员列表
         repos_star_user_list = []
         # 项目成员列表
         repos_member_list = []
-
-        # # 最终项目列表
-        # res_nodes = []
 
         # 获取项目关注人员和成员列表
         for repo in repos:

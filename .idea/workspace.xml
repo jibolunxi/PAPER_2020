@@ -18,14 +18,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/network/initial_construct_network.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="252">
-              <caret line="262" column="48" selection-start-line="262" selection-start-column="48" selection-end-line="262" selection-end-column="48" />
-              <folding>
-                <element signature="e#0#27#0" expanded="true" />
-                <element signature="e#4156#5006#0" />
-                <element signature="e#5094#6388#0" />
-                <element signature="e#6482#7634#0" />
-              </folding>
+            <state relative-caret-position="-3159">
+              <caret column="27" selection-start-column="27" selection-end-column="27" />
             </state>
           </provider>
         </entry>
@@ -70,14 +64,17 @@
     <findStrings>
       <find>year</find>
       <find>get_repo_by_year</find>
-      <find>get_repo_star</find>
       <find>print</find>
       <find>projects</find>
       <find>name</find>
-      <find>count_same_star_watch</find>
       <find>get_star_user_by_id</find>
       <find>repos_star_user_list</find>
       <find>node_link_res</find>
+      <find>repos_network_matrix</find>
+      <find>count_same_star_watch</find>
+      <find>get_star_1000_repo_by_year</find>
+      <find>get_repo_issue</find>
+      <find>get_repo_star</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -314,13 +311,13 @@
       <window_info id="Favorites" order="2" sideWeight="0.5084388" side_tool="true" weight="0.1883378" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.49932975" visible="true" weight="0.3045326" />
+      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.49932975" weight="0.3045326" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.39943343" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.32956153" />
       <window_info anchor="bottom" id="Version Control" order="7" />
-      <window_info anchor="bottom" id="Terminal" order="8" sideWeight="0.49867898" weight="0.33002833" />
+      <window_info active="true" anchor="bottom" id="Terminal" order="8" sideWeight="0.49867898" visible="true" weight="0.33002833" />
       <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.501321" side_tool="true" weight="0.33002833" />
       <window_info anchor="bottom" id="Python Console" order="10" weight="0.32956153" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
@@ -398,14 +395,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/network/initial_construct_network.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="252">
-          <caret line="262" column="48" selection-start-line="262" selection-start-column="48" selection-end-line="262" selection-end-column="48" />
-          <folding>
-            <element signature="e#0#27#0" expanded="true" />
-            <element signature="e#4156#5006#0" />
-            <element signature="e#5094#6388#0" />
-            <element signature="e#6482#7634#0" />
-          </folding>
+        <state relative-caret-position="-3159">
+          <caret column="27" selection-start-column="27" selection-end-column="27" />
         </state>
       </provider>
     </entry>
