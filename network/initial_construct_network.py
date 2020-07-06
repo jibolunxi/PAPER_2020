@@ -267,8 +267,14 @@ if __name__ == '__main__':
                     col = np.array([weight_list])
                     repos_network_matrix = np.column_stack((repos_network_matrix, col.T))
 
-        link_res = []
-        node_res = []
+        link_filename = "links_year.csv"
+        link_filename = link_filename.replace("year", str(year))
+        util.print_list_row_to_csv(link_filename, ['Source', 'Target', 'Weight', 'Type'], 'w')
+
+        node_filename = "nodes_year.csv"
+        node_filename = node_filename.replace("year", str(year))
+        util.print_list_row_to_csv(node_filename, ['id', 'label'], 'w')
+
         nodes = []
         res_size = len(repos)
         for res_i in range(res_size):
@@ -279,17 +285,13 @@ if __name__ == '__main__':
                 node2_name = get_name_by_id(dbObject, node2_id)
                 weight = repos_network_matrix[res_i][res_j]
                 if weight > 100:
-                    nodes.append(node1_name)
-                    nodes.append(node2_name)
-                    link_res.append({'Source': node1_name, 'Target': node2_name, 'Weight': weight, 'Type': 'undirected'})
-
-        link_filename = "links_year.csv"
-        link_filename = link_filename.replace("year", str(year))
-        util.print_to_csv(link_filename, link_res, ['Source', 'Target', 'Weight', 'Type'])
-
-        node_filename = "nodes_year.csv"
-        node_filename = node_filename.replace("year", str(year))
-        nodes = list(set(nodes))
-        for node in nodes:
-            nodes.append({'id': node, 'label': node})
-        util.print_to_csv(node_filename, node_res, ['id', 'label'])
+                    link_data = [node1_name, node2_name, weight, 'undirected']
+                    util.print_list_row_to_csv(link_filename, link_data, 'a')
+                    if node1_name not in nodes:
+                        node_data = [node1_name, node1_name]
+                        util.print_list_row_to_csv(node_filename, node_data, 'a')
+                        nodes.append(node1_name)
+                    if node2_name not in nodes:
+                        node_data = [node2_name, node2_name]
+                        util.print_list_row_to_csv(node_filename, node_data, 'a')
+                        nodes.append(node2_name)
