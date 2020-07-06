@@ -7,9 +7,10 @@ from util import util
 
 
 FORK_WEIGHT = 100
-SAME_OWNER_WEIGHT = 50
+SAME_OWNER_WEIGHT = 30
 SAME_STAR_WEIGHT = 0.5
 SAME_CODER_WEIGHT = 10
+WEIGHT_THRESHOLD = 80
 # SAME_LANGUAGE_WEIGHT = 1
 
 
@@ -202,96 +203,109 @@ def count_same_issue(db_object, repo1_id, repo2_id, year):
     return weight
 
 
+# 初始网络权值确定
+def calculate_weight(dbObject, repos, repos_member_list, link_filename, node_filename):
+    # 进度条
+    size = len(repos)
+    pb = ProcessBar(size)
+
+    for repo_i in range(0, size):
+        node_data = [repos[repo_i]['id'], repos[repo_i]['id']]
+        util.print_list_row_to_csv(node_filename, node_data, 'a')
+        for repo_j in range(repo_i + 1, size):
+            count_weight = 0
+            count_weight += fork_or_owner_relation(dbObject, repos[repo_i]['id'], repos[repo_j]['id'])
+            count_weight += len(set(repos_member_list[repo_i]) & set(repos_member_list[repo_j])) * SAME_CODER_WEIGHT
+            # count_weight += len(set(repos_star_user_list[repo_i]) & set(repos_star_user_list[repo_j])) * SAME_STAR_WEIGHT
+
+            # count_weight += count_same_pr(dbObject, repos[repo_i], repos[repo_j], year)
+            # count_weight += count_same_issue(dbObject, repos[repo_i], repos[repo_j], year)
+
+            # repos_network_matrix[repo_i][repo_j] += count_weight
+            # repos_network_matrix[repo_j][repo_i] += count_weight
+
+            link_data = [repos[repo_i]['id'], repos[repo_j]['id'], count_weight, 'undirected']
+            util.print_list_row_to_csv(link_filename, link_data, 'a')
+
+        pb.print_next()
+
+
+# 网络扩展
+def network_expansion(dbObject, year, all_repos, repos, repos_star_user_list, repos_member_list, link_filename, node_filename):
+    size = len(all_repos)
+    pb = ProcessBar(size)
+    for repo in all_repos:
+        pb.print_next()
+        if repo not in repos:
+            join_it = False
+            size = len(repos)
+            weight_list = list(np.zeros(size))
+            for repo_i in range(0, size):
+                count_weight = 0
+                count_weight += fork_or_owner_relation(dbObject, repos[repo_i]['id'], repo['id'])
+                count_weight += len(set(repos_member_list[repo_i]) & set(
+                    get_members_by_id(dbObject, year, repo['id']))) * SAME_CODER_WEIGHT
+                count_weight += len(set(repos_star_user_list[repo_i]) & set(get_star_user_by_id(dbObject, year, repo['id']))) * SAME_STAR_WEIGHT
+
+                weight_list[repo_i] = count_weight
+
+                if count_weight >= WEIGHT_THRESHOLD:
+                    join_it = True
+
+            if join_it:
+                node_data = [repo['id'], repo['id']]
+                util.print_list_row_to_csv(node_filename, node_data, 'a')
+                repos.append(repo)
+                repos_member_list.append(get_members_by_id(dbObject, year, repo['id']))
+                repos_star_user_list.append(get_star_user_by_id(dbObject, year, repo['id']))
+                for value_i in range(0, size):
+                    link_data = [repos[value_i]['id'], repo['id'], weight_list[value_i], 'undirected']
+                    util.print_list_row_to_csv(link_filename, link_data, 'a')
+                # row = np.array([weight_list])
+                # repos_network_matrix = np.row_stack((repos_network_matrix, row))
+                # weight_list.append(0)
+                # col = np.array([weight_list])
+                # repos_network_matrix = np.column_stack((repos_network_matrix, col.T))
+
+
 if __name__ == '__main__':
     dbObject = mysql_pdbc.SingletonModel()
 
     for year in range(2009, 2019):
-        # 获取star排名前1000，且star数大于5、issue大于10的项目id
-        all_repos = data_clean.get_filtered_repos(dbObject, year)
-        repos = all_repos[0:1000] if len(all_repos) > 1000 else all_repos
-
-        # 进度条
-        size = len(repos)
-        pb = ProcessBar(size)
-
-        # 构建size * size的矩阵
-        repos_network_matrix = np.zeros([size, size])
-        # repos_star_user_list = []
-        repos_member_list = []
-        for repo in repos:
-            # repos_star_user_list.append(get_star_user_by_id(dbObject, year, repo['id']))
-            repos_member_list.append(get_members_by_id(dbObject, year, repo['id']))
-
-        # 权值确定
-        for repo_i in range(0, size):
-            for repo_j in range(repo_i + 1, size):
-                count_weight = 0
-                count_weight += fork_or_owner_relation(dbObject, repos[repo_i]['id'], repos[repo_j]['id'])
-                count_weight += len(set(repos_member_list[repo_i]) & set(repos_member_list[repo_j])) * SAME_CODER_WEIGHT
-                # count_weight += len(set(repos_star_user_list[repo_i]) & set(repos_star_user_list[repo_j])) * SAME_STAR_WEIGHT
-
-                # count_weight += count_same_pr(dbObject, repos[repo_i], repos[repo_j], year)
-                # count_weight += count_same_issue(dbObject, repos[repo_i], repos[repo_j], year)
-
-                repos_network_matrix[repo_i][repo_j] += count_weight
-                repos_network_matrix[repo_j][repo_i] += count_weight
-            pb.print_next()
-
-        # 网络扩展
-        size = len(all_repos)
-        pb = ProcessBar(size)
-        for repo in all_repos:
-            pb.print_next()
-            if repo not in repos:
-                join_it = False
-                size = len(repos)
-                weight_list = list(np.zeros(size))
-                for repo_i in range(0, size):
-                    count_weight = 0
-                    count_weight += fork_or_owner_relation(dbObject, repos[repo_i]['id'], repo['id'])
-                    count_weight += len(set(repos_member_list[repo_i]) & set(get_members_by_id(dbObject, year, repo['id']))) * SAME_CODER_WEIGHT
-                    # count_weight += len(set(repos_star_user_list[repo_i]) & set(get_star_user_by_id(dbObject, year, repo['id']))) * SAME_STAR_WEIGHT
-
-                    weight_list[repo_i] = count_weight
-
-                    if count_weight >= 100:
-                        join_it = True
-
-                if join_it:
-                    repos.append(repo)
-                    repos_member_list.append(get_members_by_id(dbObject, year, repo['id']))
-                    # repos_star_user_list.append(get_star_user_by_id(dbObject, year, repo['id']))
-                    row = np.array([weight_list])
-                    repos_network_matrix = np.row_stack((repos_network_matrix, row))
-                    weight_list.append(0)
-                    col = np.array([weight_list])
-                    repos_network_matrix = np.column_stack((repos_network_matrix, col.T))
-
+        # 结果输出文件初始化
         link_filename = "links_year.csv"
         link_filename = link_filename.replace("year", str(year))
         util.print_list_row_to_csv(link_filename, ['Source', 'Target', 'Weight', 'Type'], 'w')
-
         node_filename = "nodes_year.csv"
         node_filename = node_filename.replace("year", str(year))
         util.print_list_row_to_csv(node_filename, ['id', 'label'], 'w')
 
-        nodes = []
-        res_size = len(repos)
-        for res_i in range(res_size):
-            for res_j in range(res_i + 1, res_size):
-                node1_id = repos[res_i]['id']
-                node1_name = get_name_by_id(dbObject, node1_id)
-                node2_id = repos[res_j]['id']
-                node2_name = get_name_by_id(dbObject, node2_id)
-                weight = repos_network_matrix[res_i][res_j]
-                if weight > 100:
-                    link_data = [node1_name, node2_name, weight, 'undirected']
-                    util.print_list_row_to_csv(link_filename, link_data, 'a')
-                    if node1_name not in nodes:
-                        node_data = [node1_name, node1_name]
-                        util.print_list_row_to_csv(node_filename, node_data, 'a')
-                        nodes.append(node1_name)
-                    if node2_name not in nodes:
-                        node_data = [node2_name, node2_name]
-                        util.print_list_row_to_csv(node_filename, node_data, 'a')
-                        nodes.append(node2_name)
+        # 获取star排名前1000，且star数大于5、issue大于10的项目id
+        all_repos = data_clean.get_filtered_repos(dbObject, year)
+
+        # 获取初始矩阵所包含项目
+        repos = all_repos[0:1000] if len(all_repos) > 1000 else all_repos
+        size = len(repos)
+
+        # # 构建size * size的矩阵
+        # repos_network_matrix = np.zeros([size, size])
+
+        # 项目关注人员列表
+        repos_star_user_list = []
+        # 项目成员列表
+        repos_member_list = []
+
+        # # 最终项目列表
+        # res_nodes = []
+
+        # 获取项目关注人员和成员列表
+        for repo in repos:
+            repos_star_user_list.append(get_star_user_by_id(dbObject, year, repo['id']))
+            repos_member_list.append(get_members_by_id(dbObject, year, repo['id']))
+
+        # 初始网络权值确定
+        calculate_weight(dbObject, repos, repos_member_list, link_filename, node_filename)
+
+        # 网络扩展
+        network_expansion(dbObject, year, all_repos, repos, repos_star_user_list, repos_member_list, link_filename, node_filename)
+
