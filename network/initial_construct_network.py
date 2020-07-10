@@ -72,15 +72,16 @@ def calculate_weight(dbObject, repos, repos_member_list, link_filename, node_fil
     pb = ProcessBar(size)
 
     for repo_i in range(0, size):
-        node_data = [repos[repo_i]['id'], repos[repo_i]['id']]
-        util.print_list_row_to_csv(node_filename, node_data, 'a')
         for repo_j in range(repo_i + 1, size):
             count_weight = 0
             count_weight += fork_or_owner_relation(dbObject, repos[repo_i]['id'], repos[repo_j]['id'])
             count_weight += len(set(repos_member_list[repo_i]) & set(repos_member_list[repo_j])) * SAME_CODER_WEIGHT
 
-            link_data = [repos[repo_i]['id'], repos[repo_j]['id'], count_weight, 'undirected']
-            util.print_list_row_to_csv(link_filename, link_data, 'a')
+            if count_weight >= WEIGHT_THRESHOLD:
+                node_data = [repos[repo_i]['id'], repos[repo_i]['id']]
+                util.print_list_row_to_csv(node_filename, node_data, 'a')
+                link_data = [repos[repo_i]['id'], repos[repo_j]['id'], count_weight, 'undirected']
+                util.print_list_row_to_csv(link_filename, link_data, 'a')
 
         pb.print_next()
 
@@ -114,14 +115,15 @@ def network_expansion(dbObject, year, all_repos, repos, repos_star_user_list, re
                 repos_member_list.append(get_members_by_id(dbObject, year, repo['id']))
                 repos_star_user_list.append(get_star_user_by_id(dbObject, year, repo['id']))
                 for value_i in range(0, size):
-                    link_data = [repos[value_i]['id'], repo['id'], weight_list[value_i], 'undirected']
-                    util.print_list_row_to_csv(link_filename, link_data, 'a')
+                    if weight_list[value_i] >= WEIGHT_THRESHOLD:
+                        link_data = [repos[value_i]['id'], repo['id'], weight_list[value_i], 'undirected']
+                        util.print_list_row_to_csv(link_filename, link_data, 'a')
 
 
 if __name__ == '__main__':
     dbObject = mysql_pdbc.SingletonModel()
 
-    for year in range(2009, 2019):
+    for year in range(2016, 2019):
         # 结果输出文件初始化
         link_filename = "links_year.csv"
         link_filename = link_filename.replace("year", str(year))
@@ -132,8 +134,15 @@ if __name__ == '__main__':
 
         # 获取star排名前1000，且star数大于5、issue大于10的项目id
         all_repos = data_clean.get_filtered_repos(dbObject, year)
+        print(len(all_repos))
+        for sub_i in range(20):
+            if len(all_repos) < 10000 * sub_i:
+                break
+            else:
+                print(sub_i * 10000, all_repos[sub_i * 10000])
 
         # 获取初始矩阵所包含项目
+        all_repos = all_repos[:10000]
         repos = all_repos[0:1000] if len(all_repos) > 1000 else all_repos
         size = len(repos)
 

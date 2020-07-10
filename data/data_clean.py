@@ -8,7 +8,6 @@ MIN_STAR = 10
 def get_star_num(db_object, year):
     sql = "select repo_id id, count(repo_id) count from watchers " \
           "where unix_timestamp(created_at) < unix_timestamp('next_year-01-01 00:00:00') " \
-          "and unix_timestamp(created_at) > unix_timestamp('year-01-01 00:00:00')" \
           "group by repo_id"
     sql = sql.replace("next_year", str(year + 1))
     sql = sql.replace("year", str(year))
