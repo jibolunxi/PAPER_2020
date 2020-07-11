@@ -9,7 +9,7 @@ FORK_WEIGHT = 100
 SAME_OWNER_WEIGHT = 30
 SAME_STAR_WEIGHT = 0.5
 SAME_CODER_WEIGHT = 10
-WEIGHT_THRESHOLD = 80
+WEIGHT_THRESHOLD = 20
 
 
 # 通过id获取代码库名称
@@ -62,6 +62,9 @@ def get_members_by_id(db_object, year, id):
     members = []
     for user in members_users:
         members.append(user['user_id'])
+    sql = "select * from projects where id = " + str(id)
+    repo = db_object.execute(sql)[0]
+    members.append(repo['owner_id'])
     return members
 
 
@@ -72,14 +75,14 @@ def calculate_weight(dbObject, repos, repos_member_list, link_filename, node_fil
     pb = ProcessBar(size)
 
     for repo_i in range(0, size):
+        node_data = [repos[repo_i]['id'], repos[repo_i]['id']]
+        util.print_list_row_to_csv(node_filename, node_data, 'a')
         for repo_j in range(repo_i + 1, size):
             count_weight = 0
             count_weight += fork_or_owner_relation(dbObject, repos[repo_i]['id'], repos[repo_j]['id'])
             count_weight += len(set(repos_member_list[repo_i]) & set(repos_member_list[repo_j])) * SAME_CODER_WEIGHT
 
             if count_weight >= WEIGHT_THRESHOLD:
-                node_data = [repos[repo_i]['id'], repos[repo_i]['id']]
-                util.print_list_row_to_csv(node_filename, node_data, 'a')
                 link_data = [repos[repo_i]['id'], repos[repo_j]['id'], count_weight, 'undirected']
                 util.print_list_row_to_csv(link_filename, link_data, 'a')
 
@@ -87,21 +90,21 @@ def calculate_weight(dbObject, repos, repos_member_list, link_filename, node_fil
 
 
 # 网络扩展
-def network_expansion(dbObject, year, all_repos, repos, repos_star_user_list, repos_member_list, link_filename, node_filename):
+def network_expansion(dbObject, year, all_repos, repos, repos_member_list, link_filename, node_filename):
     size = len(all_repos)
     pb = ProcessBar(size)
     for repo in all_repos:
         pb.print_next()
         if repo not in repos:
             join_it = False
+            members = get_members_by_id(dbObject, year, repo['id'])
             size = len(repos)
             weight_list = list(np.zeros(size))
             for repo_i in range(0, size):
                 count_weight = 0
                 count_weight += fork_or_owner_relation(dbObject, repos[repo_i]['id'], repo['id'])
-                count_weight += len(set(repos_member_list[repo_i]) & set(
-                    get_members_by_id(dbObject, year, repo['id']))) * SAME_CODER_WEIGHT
-                count_weight += len(set(repos_star_user_list[repo_i]) & set(get_star_user_by_id(dbObject, year, repo['id']))) * SAME_STAR_WEIGHT
+                count_weight += len(set(repos_member_list[repo_i]) & set(members)) * SAME_CODER_WEIGHT
+                # count_weight += len(set(repos_star_user_list[repo_i]) & set(get_star_user_by_id(dbObject, year, repo['id']))) * SAME_STAR_WEIGHT
 
                 weight_list[repo_i] = count_weight
 
@@ -112,8 +115,8 @@ def network_expansion(dbObject, year, all_repos, repos, repos_star_user_list, re
                 node_data = [repo['id'], repo['id']]
                 util.print_list_row_to_csv(node_filename, node_data, 'a')
                 repos.append(repo)
-                repos_member_list.append(get_members_by_id(dbObject, year, repo['id']))
-                repos_star_user_list.append(get_star_user_by_id(dbObject, year, repo['id']))
+                repos_member_list.append(members)
+                # repos_star_user_list.append(get_star_user_by_id(dbObject, year, repo['id']))
                 for value_i in range(0, size):
                     if weight_list[value_i] >= WEIGHT_THRESHOLD:
                         link_data = [repos[value_i]['id'], repo['id'], weight_list[value_i], 'undirected']
@@ -143,22 +146,22 @@ if __name__ == '__main__':
 
         # 获取初始矩阵所包含项目
         all_repos = all_repos[:10000]
-        repos = all_repos[0:1000] if len(all_repos) > 1000 else all_repos
+        repos = all_repos[0:3000] if len(all_repos) > 3000 else all_repos
         size = len(repos)
 
         # 项目关注人员列表
-        repos_star_user_list = []
+        # repos_star_user_list = []
         # 项目成员列表
         repos_member_list = []
 
         # 获取项目关注人员和成员列表
         for repo in repos:
-            repos_star_user_list.append(get_star_user_by_id(dbObject, year, repo['id']))
+            # repos_star_user_list.append(get_star_user_by_id(dbObject, year, repo['id']))
             repos_member_list.append(get_members_by_id(dbObject, year, repo['id']))
 
         # 初始网络权值确定
         calculate_weight(dbObject, repos, repos_member_list, link_filename, node_filename)
 
         # 网络扩展
-        network_expansion(dbObject, year, all_repos, repos, repos_star_user_list, repos_member_list, link_filename, node_filename)
+        network_expansion(dbObject, year, all_repos, repos, repos_member_list, link_filename, node_filename)
 
