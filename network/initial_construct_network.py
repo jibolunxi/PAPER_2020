@@ -126,7 +126,7 @@ def network_expansion(dbObject, year, all_repos, repos, repos_member_list, link_
 if __name__ == '__main__':
     dbObject = mysql_pdbc.SingletonModel()
 
-    for year in range(2016, 2019):
+    for year in range(2011, 2016):
         # 结果输出文件初始化
         link_filename = "links_year.csv"
         link_filename = link_filename.replace("year", str(year))
